@@ -1,117 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd">
     
      <flow name="train-irctc-raja-main">
         <http:listener config-ref="train-irctc-raja-httpListenerConfig" path="/api/*" doc:name="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:response>
             <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="train-irctc-raja-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
+        <ee:transform doc:name="apiStartTime" doc:id="53418f61-5b5c-47e0-b9f6-26a9fc7cd508">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="apiStartTime"><![CDATA[%dw 2.0
+output application/dw
+---
+now()]]></ee:set-variable>
+				<ee:set-variable variableName="initialPayload" ><![CDATA[%dw 2.0
 output application/json
 ---
-{message: "Bad request"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Method not allowed"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not acceptable"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<apikit:router config-ref="train-irctc-raja-config" />
+		
     </flow>
     <flow name="get:\trains:train-irctc-raja-config">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-  {
-    trainNumber: "12345",
-    trainName: "Sample Express",
-    departureStation: "SRC",
-    arrivalStation: "DST",
-    departureTime: "08:00 AM",
-    arrivalTime: "04:30 PM",
-    duration: "8h 30m"
-  }
-]]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <flow-ref doc:name="getTrainDetails-Sub_Flow" doc:id="b4e9531c-3cdb-4ca8-b5e8-3f32fb1d1e0c" name="getTrainDetails-Sub_Flow"/>
     </flow>
     <flow name="get:\trains\(trainNo):train-irctc-raja-config">
         <ee:transform doc:name="var-trainNo">
@@ -119,33 +37,11 @@ output application/json
                 <ee:set-variable variableName="trainNo">attributes.uriParams.'trainNo'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  trainNumber: "12345",
-  trainName: "Sample Express",
-  departureStation: "SRC",
-  arrivalStation: "DST",
-  departureTime: "08:00 AM",
-  arrivalTime: "04:30 PM",
-  duration: "8h 30m"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <flow-ref doc:name="getSpecificTrain-Sub_Flow" doc:id="d4ea4da4-45d8-41dc-af8a-a746132779fd" name="getSpecificTrain-Sub_Flow"/>
     </flow>
     <flow name="post:\trains:application\json:train-irctc-raja-config">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  msg: "Train created Successfully"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+<!-- [STUDIO:"createTable-Sub_Flow"]<flow-ref doc:name="createTable-Sub_Flow" doc:id="4e0010c2-394e-461d-8d26-bed6e2bfd95f" name="createTable-Sub_Flow"/> [STUDIO] -->
+				<flow-ref doc:name="insertTrainDetails-Sub_Flow" doc:id="1ba1a8c9-f2ab-4d43-bb00-1b25e640978d" name="insertTrainDetails-Sub_Flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="08b922ef-e2db-4d22-a7c1-85eed4a2b661" />
     </flow>
 </mule>

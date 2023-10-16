@@ -1,0 +1,11 @@
+HTTPListener:
+  port: "8081"
+  timeout: "30000"
+database:
+ host: "localhost"
+ port: "3306"
+ user:
+    userId: "![72K3Oyw1x2BxChfLm0o9QQ==]"
+    password: "![72K3Oyw1x2BxChfLm0o9QQ==]"
+ databaseName: "irctc"
+APIInstanceId: "19043379"

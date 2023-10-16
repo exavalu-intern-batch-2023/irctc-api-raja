@@ -1,0 +1,11 @@
+[
+  {
+    trainNumber: "12345",
+    trainName: "Sample Express",
+    departureStation: "SRC",
+    arrivalStation: "DST",
+    departureTime: "08:00 AM",
+    arrivalTime: "04:30 PM",
+    duration: "8h 30m"
+  }
+]

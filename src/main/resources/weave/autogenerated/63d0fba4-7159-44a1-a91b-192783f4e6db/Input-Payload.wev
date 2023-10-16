@@ -1,0 +1,13 @@
+%dw 2.0
+
+type auto_63d0fba4_7159_44a1_a91b_192783f4e6db_Input_Payload = {
+  departureTime: String, 
+  duration: String, 
+  arrivalTime: String, 
+  trainName: String, 
+  trainNumber: String, 
+  departureStation: String, 
+  arrivalStation: String, 
+  _?: Any
+}
+

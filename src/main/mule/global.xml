@@ -1,12 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
 	<http:listener-config name="train-irctc-raja-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
+        <http:listener-connection host="0.0.0.0" port="${HTTPListener.port}" readTimeout="${HTTPListener.timeout}"/>
     </http:listener-config>
 	<apikit:config name="train-irctc-raja-config" api="resource::04d48682-a058-4c19-ae4e-043b2f8882b4:train-irctc-raja:1.0.1:raml:zip:train-irctc-raja.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="874df9bd-514b-4f4a-97a0-960839bc9d3b" >
+		<db:my-sql-connection host="${database.host}" port="${database.port}" user="${secure::database.user.userId}" password="${secure::database.user.password}" database="${database.databaseName}" />
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="08c9c428-0bdd-470f-a720-db97b5a2c0a0" defaultErrorHandler-ref="globalErrorError_Handler" />
+	<configuration-properties doc:name="Configuration properties" doc:id="f083e648-9a82-45d2-86b7-49232abe2148" file="property\irctc-api-${env}.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="3a151bb5-b444-42ff-bce6-b2a26f58e1e9" file="property\irctc-api-${env}.yaml" key="${secure.property}" />
+	<api-gateway:autodiscovery apiId="${APIInstanceId}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="9252afb3-8bf1-4ccf-bb59-34b185b3e56a" flowRef="train-irctc-raja-main" />
 </mule>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<sub-flow name="getTrainDetails-Sub_Flow" doc:id="379aad3e-740c-4916-9c1c-0c3ceeaa7acd" >
+		<db:select doc:name="getTrainDetails" doc:id="10249492-4c66-4b82-8689-3878c129d697" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from traindetails where departureStation = :sourceStation and arrivalStation = :destinationStation;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'sourceStation': attributes.queryParams.sourceStation,
+	'destinationStation' :  attributes.queryParams.destinationStation
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="f41e2073-f0d3-4c4f-a02a-ae9ffabdc589" >
+			<when expression="#[payload == []]">
+				<raise-error doc:name="Raise error" doc:id="ba8cdd7a-abe2-4dfa-8d8e-63c01dc8ed8c" type="APP:CUSTOM_ERROR" description="There is no any train between specified station"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="fa0002ab-5280-420e-bbec-22c1c4179612">
+			<ee:message>
+						<ee:set-payload resource="dwls/getTrainDetails-output.dwl" />
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="insertTrainDetails-Sub_Flow" doc:id="83b5bd37-ee4d-4a38-909d-3f10666f27a3" >
+		<choice doc:name="Choice" doc:id="1f1704fc-71cb-4da0-9fed-63004a0e3a27" >
+			<when expression='#[attributes.headers.bulkInsert == "true"]'>
+				<ee:transform doc:name="[payload]" doc:id="627ef484-609d-487a-80af-f8c989e27462">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[vars.initialPayload]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<async doc:name="Async" doc:id="38619708-5c5f-4e2d-a348-fce65c6ceb70" >
+					<db:bulk-insert doc:name="Bulk insert" doc:id="29e5c928-1716-4656-b64d-3628ab77cb7d" config-ref="Database_Config">
+					<db:sql><![CDATA[Insert Into traindetails (trainNumber,trainName,departureStation,arrivalStation,departureTime,arrivalTime,duration) values (:trainNumber,:trainName,:departureStation,:arrivalStation,:departureTime,:arrivalTime,:duration)]]></db:sql>
+				</db:bulk-insert>
+				</async>
+				<ee:transform doc:name="Transform Message" doc:id="86f0d76d-c9ad-4783-adc1-448499d99db1">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg": "successFul",
+	"insertionType": "BulkInsert"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="2e6b4a61-bb0d-4b30-94f7-f4968cefc0ac" config-ref="Database_Config">
+					<db:sql ><![CDATA[Insert Into traindetails (trainNumber,trainName,departureStation,arrivalStation,departureTime,arrivalTime,duration) values (:trainNumber,:trainName,:departureStation,:arrivalStation,:departureTime,:arrivalTime,:duration)]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	trainNumber: payload.trainNumber,
+	trainName: payload.trainName,
+	departureStation: payload.departureStation,
+	arrivalStation: payload.arrivalStation,
+	departureTime: payload.departureTime,
+	arrivalTime: payload.arrivalTime,
+	duration: payload.duration
+}]]]></db:input-parameters>
+				</db:insert>
+				<ee:transform doc:name="Transform Message" doc:id="a0584412-44cf-4399-a1b9-752a4eea50ec" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg": payload.affectedRows,
+	"insertionType": "singleInsert"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="createTable-Sub_Flow" doc:id="63d0fba4-7159-44a1-a91b-192783f4e6db" >
+		<db:execute-script doc:name="Execute script" doc:id="0b0055cc-ac90-4cd4-ba54-8460f2bc9fc1" config-ref="Database_Config">
+			<db:sql><![CDATA[ CREATE TABLE trainCancelled (
+            trainNumber INT PRIMARY KEY,
+            trainName VARCHAR(45)
+        );]]></db:sql>
+		</db:execute-script>
+		<ee:transform doc:name="Transform Message" doc:id="280147c1-2950-4559-96f5-1340cf2b2c2f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg": "table created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="getSpecificTrain-Sub_Flow" doc:id="89331bab-9894-4c18-a38d-1267d559842f" >
+		<db:query-single doc:name="Query single" doc:id="edb52090-d8f8-4f68-8d03-70d2846402b6" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from traindetails where trainNumber = :trainNumber]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	trainNumber: vars.trainNo
+}]]]></db:input-parameters>
+		</db:query-single>
+		<ee:transform doc:name="Transform Message" doc:id="1a42ce37-8acb-4b11-abb7-c6514860e7d9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<flow name="logicFlow1" doc:id="a089dd40-c22c-43fb-9e41-67da9faabaae" >
+		<db:listener doc:name="On Table Row" doc:id="42b605c7-5ccf-4fa7-bf75-7d9f1e7f3ea9" config-ref="Database_Config" table="user" watermarkColumn="userId" idColumn="userId">
+			<scheduling-strategy >
+				<fixed-frequency frequency="5000"/>
+			</scheduling-strategy>
+		</db:listener>
+		<db:update doc:name="Update status to active" doc:id="e01838c5-45fc-46f0-b993-64b69042e24e" config-ref="Database_Config">
+			<db:sql ><![CDATA[update user SET statusId = :statusId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	statusId: 1
+}]]]></db:input-parameters>
+		</db:update>
+		<logger level="INFO" doc:name="log the user status" doc:id="26d3901d-4de4-4378-8d1c-bcd3b577e2c6" message='#[{"status": "user is active now"}]'/>
+	</flow>
+</mule>
